@@ -46,6 +46,10 @@ function parseMode(raw: string) {
 function startMode(c: Connection) { return parseMode(c.startMode); }
 function endMode(c: Connection) { return parseMode(c.endMode); }
 
+function usesTaxi(c: Connection) {
+    return parseMode(c.startMode) === Mode.Taxi || parseMode(c.endMode) === Mode.Taxi;
+}
+
 function startCost(c: Connection, params: Params) {
     switch (startMode(c)) {
         case Mode.Walk: return c.startLength;
@@ -83,6 +87,8 @@ function overtakes(a: Connection, b: Connection) {
 function dominates(a: Connection, b: Connection, params: Params): number {
     if (a === b) {
         return 0;
+    } else if(usesTaxi(a) || !usesTaxi(b)) {
+        return Number.NEGATIVE_INFINITY;
     }
 
     const costA = cost(a, params);
