@@ -7,8 +7,9 @@
 
 	let params = $state<Params>({
 		alpha: 3.0,
-		factorTaxi: 10.0,
-		baseTaxi: 35.0,
+		beta: 3.0,
+		baseTaxi: 37.0,
+		factorTaxi: 12.0,
 		factorTransfer: 5.0
 	});
 
