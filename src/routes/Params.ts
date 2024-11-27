@@ -1,11 +1,11 @@
 import type { CostThreshold } from "./CostThreshold";
 
 export type Params = {
-  alpha: number;
+  weightTravelTime: number;
+  weightTimeDistance: number;
   costWalk: Array<CostThreshold>;
   costTaxi: Array<CostThreshold>;
   costTransfer: Array<CostThreshold>;
-  distanceDirectTaxi: number;
-  improvementFactorDirectTaxi: number;
-  minImprovementDirectTaxi: number;
+  constantDirectTaxi: number;
+  factorDirectTaxi: number;  
 }

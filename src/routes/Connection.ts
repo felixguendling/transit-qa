@@ -81,12 +81,18 @@ function travelTime(c: Connection) {
 	return arr(c) - dep(c);
 }
 
+function PTTime(c: Connection) {
+	return travelTime(c) - c.startLength - c.endLength;
+}
+
 function cost(c: Connection, params: Params) {
 	return (
-		startCost(c, params) +
-		endCost(c, params) +
-		travelTime(c) +
-		tally(c.transfers, params.costTransfer)
+		(startCost(c, params) +
+			endCost(c, params) +
+			PTTime(c) +
+			tally(c.transfers, params.costTransfer)) *
+			(directTaxi(c) ? params.factorDirectTaxi : 1) +
+		(directTaxi(c) ? params.constantDirectTaxi : 0)
 	);
 }
 
@@ -113,43 +119,33 @@ function directTaxi(c: Connection) {
 function dominates(a: Connection, b: Connection, params: Params): number {
 	if (a === b) {
 		return 0;
-	} 
-	
-	if(!usesTaxi(a) && !usesTaxi(b)) {
+	}
+
+	if (!usesTaxi(a) && !usesTaxi(b)) {
 		return paretoDominates(a, b) ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
 	}
 
-	if(usesTaxi(a) && directTaxi(b)) {
-		return directTaxiDominates(a,b,params);
+	if (usesTaxi(b)) {
+		return costDominates(a, b, params);
 	}
 
-	if (usesTaxi(b)) {
-		return costDominates(a,b,params);
-	}
-	
-	return Number.NEGATIVE_INFINITY;	
+	return Number.NEGATIVE_INFINITY;
 }
 
 function paretoDominates(a: Connection, b: Connection) {
-	const res = (
+	const res =
 		dep(a) >= dep(b) &&
 		arr(a) <= arr(b) &&
 		a.transfers <= b.transfers &&
-		(dep(a) > dep(b) || arr(a) < arr(b) || a.transfers < b.transfers)
-	);
-	console.log(
-		'%s dominatesPareto %s? => %o',
-		a.name,
-		b.name,
-		res
-	);
+		(dep(a) > dep(b) || arr(a) < arr(b) || a.transfers < b.transfers);
+	console.log('%s dominatesPareto %s? => %o', a.name, b.name, res);
 	return res;
 }
 
 function costDominates(a: Connection, b: Connection, params: Params): number {
 	const costA = cost(a, params);
 	const costB = cost(b, params);
-	const alphaTerm = params.alpha * (travelTime(a) / travelTime(b)) * distance(a, b);
+	const alphaTerm = params.weightTravelTime * (travelTime(a) / travelTime(b)) + params.weightTimeDistance * Math.pow(distance(a, b),2);
 	const sum = costA + alphaTerm;
 	const res = sum < costB;
 
@@ -169,22 +165,6 @@ function costDominates(a: Connection, b: Connection, params: Params): number {
 	//             0  <  costB - sum
 	//   costB - sum  >  0
 	return costB - sum;
-}
-
-function directTaxiDominates(a: Connection, b: Connection, params: Params): number {
-	const sumA = travelTime(a) + params.distanceDirectTaxi * distance(a,b);
-	const travelTimeB = travelTime(b);
-	const minImprScore = (travelTimeB + params.minImprovementDirectTaxi) - sumA;
-	const factorImprScore = params.improvementFactorDirectTaxi * travelTimeB - sumA;
-	const res = Math.max(minImprScore, factorImprScore);
-	console.log(
-		'%s dominatesDirectTaxi %s? travelTime(%s): %d, travelTime(%s): %d, distance: %d,  => %o',
-		a.name,
-		b.name,a.name,travelTime(a),b.name,travelTime(b),
-		distance(a, b),
-		res
-	);
-	return res;
 }
 
 function distance(a: Connection, b: Connection) {
